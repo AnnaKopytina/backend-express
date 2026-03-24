@@ -14,26 +14,37 @@ let users = [
 ];
 
 router.get('/', function (req, res, next) {
-    res.json({
-        items: users
+    db.all("SELECT id, name FROM users", [], (err, rows) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).json({ message: 'DB error' });
+        }
+        res.send({
+            items: rows
+        });
     });
 })
 
 router.get('/:id', function (req, res, next) {
-    db.all("SELECT id, name FROM users", [], (err, rows) => {
+    const id = req.params.id;
+
+    db.get("SELECT id, name FROM users WHERE id = ?", [id], (err, row) => {
         if (err) {
             console.log(err);
-        } else {
-            res.send(rows);
         }
+
+        if (!row) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.send(row);
     });
 });
 
 router.post('/', function (req, res, next) {
+    const { name } = req.body;
     const insert = "INSERT INTO users (name) VALUES (?)";
     db.run(insert, [name]);
-
-    res.status(201).json(insert);
+    res.status(201).send();
 })
 
 module.exports = router;
